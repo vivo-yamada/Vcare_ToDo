@@ -119,3 +119,39 @@ ORDER BY
 
   言い忘れました。このプロンプトを要件定義書とは別に、プロンプト用のファイルに記載 してください。」をそのまま残してください。他のプロンプトも同様です。
 ```
+
+## 実装フェーズでのユーザー指示
+
+### セキュリティ改善要求
+```
+パスワードはどこを見ていますか？
+
+安全性が高いのはどの方法ですか？
+
+2. 別の認証テーブル作成（推奨）でお願いします
+```
+
+### 新規登録機能追加要求
+```
+ログイン画面に、新規登録用のボタンをつくってください。※初回ログイン時はユーザーIDと同じパスワードを入力してくださいの文言は削除してください
+```
+
+### エラー対応・ビルド問題
+```
+PS C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo> dotnet run --urls "https://localhost:5002;http://localhost:5001"
+C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo\Properties\launchSettings.json からの起動設定を使用中...
+ビルドしています...
+C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo\Tools\GeneratePasswordHash.cs(7,28): warning CS7022: プログラムのエントリ ポイントは、グローバル コードです。エントリ ポイント 'GeneratePasswordHash.Main(string[])' を無視します。
+C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo\Controllers\AccountController.cs(84,59): error CS1061: 'AuthenticationService' に 'HashPassword' の定義が含まれておらず、型 'AuthenticationService' の最初の引数を受け付けるアクセス可能な拡張メソッド 'HashPassword' が見つかりませんでした。using ディレクティブまたはアセンブリ参照が不足していないことを確認してください
+C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo\Controllers\AccountController.cs(84,22): error CS8130: 暗黙的に型指定された分解変数 'hashedPassword' の型を推論できません。
+C:\ClaudeCode\APPS\Vcare_ToDo\VcareTodo\Controllers\AccountController.cs(84,38): error CS8130: 暗黙的に型指定された分解変数 'salt' の型を推論できません。
+
+ビルドに失敗しました。ビルド エラーを修正して、もう一度実行してください。
+
+エラーしました
+```
+
+### プロンプト履歴更新要求
+```
+ここまでのプロンプトで、プロンプトファイルに記載していない分を記載してください
+```
