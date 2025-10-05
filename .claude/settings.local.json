@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlcmd:*)",
+      "Bash(chcp:*)",
+      "Bash(python:*)",
+      "Bash(powershell:*)",
+      "Bash(csc:*)",
+      "Bash(dotnet --version)",
+      "Bash(dotnet run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
