@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "ユーザー認証データ作成";
+}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>ユーザー認証データ作成</h2>
+
+        @if (!string.IsNullOrEmpty(ViewBag.Message))
+        {
+            <div class="alert @(ViewBag.Success == true ? "alert-success" : "alert-danger")">
+                @ViewBag.Message
+            </div>
+        }
+
+        <form method="post">
+            <div class="mb-3">
+                <label for="userCode" class="form-label">ユーザーコード</label>
+                <input type="text" class="form-control" id="userCode" name="userCode" required />
+                <div class="form-text">T_社員テーブルに存在するコードを入力してください</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">パスワード</label>
+                <input type="password" class="form-control" id="password" name="password" value="password123" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary">認証データ作成</button>
+            <a href="/Admin/GenerateHash" class="btn btn-secondary">ハッシュ値生成</a>
+            <a href="/Account/Login" class="btn btn-outline-primary">ログイン画面へ</a>
+        </form>
+
+        <div class="mt-4">
+            <h5>注意事項</h5>
+            <ul>
+                <li>ユーザーコードはT_社員テーブルに存在する必要があります</li>
+                <li>既に認証データが存在するユーザーは作成できません</li>
+                <li>作成後は該当のユーザーコードとパスワードでログインできます</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

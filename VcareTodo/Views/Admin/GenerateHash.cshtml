@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "パスワードハッシュ生成";
+}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>パスワードハッシュ生成結果</h2>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">生成されたハッシュ値</h5>
+
+                <div class="mb-3">
+                    <label class="form-label">パスワード:</label>
+                    <input type="text" class="form-control" value="@ViewBag.Password" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">ソルト:</label>
+                    <input type="text" class="form-control" value="@ViewBag.Salt" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">ハッシュ:</label>
+                    <input type="text" class="form-control" value="@ViewBag.Hash" readonly />
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5 class="card-title">SQL文（更新用）</h5>
+                <textarea class="form-control" rows="2" readonly>@ViewBag.SqlUpdate</textarea>
+                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToClipboard('update')">コピー</button>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5 class="card-title">SQL文（新規挿入用）</h5>
+                <textarea class="form-control" rows="2" readonly>@ViewBag.SqlInsert</textarea>
+                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToClipboard('insert')">コピー</button>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/Admin/CreateUser" class="btn btn-primary">ユーザー作成画面</a>
+            <a href="/Account/Login" class="btn btn-outline-primary">ログイン画面へ</a>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(type) {
+            let text;
+            if (type === 'update') {
+                text = '@ViewBag.SqlUpdate';
+            } else {
+                text = '@ViewBag.SqlInsert';
+            }
+
+            navigator.clipboard.writeText(text).then(function() {
+                alert('SQLをクリップボードにコピーしました');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -7,7 +7,12 @@
       "Bash(powershell:*)",
       "Bash(csc:*)",
       "Bash(dotnet --version)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dir)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build)",
+      "Bash(del \"C:\\ClaudeCode\\APPS\\Vcare_ToDo\\VcareTodo\\Tools\\GeneratePasswordHash.cs\")"
     ],
     "deny": [],
     "ask": []
