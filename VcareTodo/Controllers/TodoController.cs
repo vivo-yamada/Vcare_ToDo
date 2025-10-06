@@ -35,16 +35,19 @@ namespace VcareTodo.Controllers
                 CurrentDate = currentDate
             };
 
-            // 未定タスクを取得
+            // 未定タスクを取得（担当者コード列を使用）
             var unscheduledQuery = @"
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                       起案者, 担当者, 分類, 備考, 状態, 起案日, 新規登録日
+                       起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                 FROM T_システム管理台帳
-                WHERE 担当者 = @UserCode AND 作業予定日 IS NULL AND (状態 != '完了' OR 状態 IS NULL)
+                WHERE 担当者コード = @UserCode AND 作業予定日 IS NULL AND (状態 != '完了' OR 状態 IS NULL)
                 ORDER BY 新規登録日 DESC";
 
-            viewModel.UnscheduledTasks = (await _db.QueryAsync<TodoTask>(unscheduledQuery, new { UserCode = targetUserCode })).ToList();
+            Console.WriteLine($"[DEBUG] UnscheduledTasks Query - UserCode: {targetUserCode}");
+            var unscheduledTasks = (await _db.QueryAsync<TodoTask>(unscheduledQuery, new { UserCode = targetUserCode })).ToList();
+            Console.WriteLine($"[DEBUG] UnscheduledTasks Count: {unscheduledTasks.Count}");
+            viewModel.UnscheduledTasks = unscheduledTasks;
 
             // 予定タスクを取得（表示期間に応じて）
             DateTime startDate, endDate;
@@ -68,9 +71,9 @@ namespace VcareTodo.Controllers
             var scheduledQuery = @"
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                       作業予定日, 修正完了日, 起案者, 担当者, 分類, 備考, 状態, 起案日, 新規登録日
+                       作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                 FROM T_システム管理台帳
-                WHERE 担当者 = @UserCode AND 作業予定日 >= @StartDate AND 作業予定日 < @EndDate
+                WHERE 担当者コード = @UserCode AND 作業予定日 >= @StartDate AND 作業予定日 < @EndDate
                 ORDER BY 作業予定日, 新規登録日";
 
             viewModel.ScheduledTasks = (await _db.QueryAsync<TodoTask>(scheduledQuery, new { UserCode = targetUserCode, StartDate = startDate, EndDate = endDate })).ToList();
@@ -109,15 +112,20 @@ namespace VcareTodo.Controllers
                     INSERT INTO T_システム管理台帳
                     (内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                      SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                     作業予定日, 修正完了日, 起案者, 担当者, 分類, 備考, 新規登録日)
+                     作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 新規登録日)
                     VALUES
                     (@内容, @取引先コード, @取引先名, @部署コード, @部署名, @PLANID, @PlanName,
                      @SYSTEMID, @SystemName, @対応方法, @見積工数, @実績工数, @保守工数,
-                     @作業予定日, @修正完了日, @起案者, @担当者, @分類, @備考, GETDATE())";
+                     @作業予定日, @修正完了日, @起案者, @担当者, @担当者コード, @分類, @備考, GETDATE())";
 
-                if (string.IsNullOrEmpty(task.担当者))
+                if (string.IsNullOrEmpty(task.担当者コード))
                 {
-                    task.担当者 = currentUserCode;
+                    task.担当者コード = currentUserCode;
+                    // 担当者コードから担当者名を取得
+                    var employeeName = await _db.QueryFirstOrDefaultAsync<string>(
+                        "SELECT 氏名 FROM T_社員 WHERE コード = @UserCode",
+                        new { UserCode = currentUserCode });
+                    task.担当者 = employeeName;
                 }
 
                 await _db.ExecuteAsync(query, task);
@@ -140,6 +148,15 @@ namespace VcareTodo.Controllers
 
             try
             {
+                // 担当者コードが変更された場合、担当者名も更新
+                if (!string.IsNullOrEmpty(task.担当者コード))
+                {
+                    var employeeName = await _db.QueryFirstOrDefaultAsync<string>(
+                        "SELECT 氏名 FROM T_社員 WHERE コード = @UserCode",
+                        new { UserCode = task.担当者コード });
+                    task.担当者 = employeeName;
+                }
+
                 var query = @"
                     UPDATE T_システム管理台帳
                     SET 内容 = @内容, 取引先コード = @取引先コード, 取引先名 = @取引先名,
@@ -147,7 +164,7 @@ namespace VcareTodo.Controllers
                         SYSTEMID = @SYSTEMID, SystemName = @SystemName, 対応方法 = @対応方法,
                         見積工数 = @見積工数, 実績工数 = @実績工数, 保守工数 = @保守工数,
                         作業予定日 = @作業予定日, 修正完了日 = @修正完了日, 起案者 = @起案者,
-                        担当者 = @担当者, 分類 = @分類, 備考 = @備考
+                        担当者 = @担当者, 担当者コード = @担当者コード, 分類 = @分類, 備考 = @備考
                     WHERE ID = @ID";
 
                 await _db.ExecuteAsync(query, task);
@@ -215,7 +232,7 @@ namespace VcareTodo.Controllers
                 var query = @"
                     SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                            SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                           作業予定日, 修正完了日, 起案者, 担当者, 分類, 備考, 状態, 起案日, 新規登録日
+                           作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                     FROM T_システム管理台帳
                     WHERE ID = @Id";
 

@@ -20,6 +20,7 @@ namespace VcareTodo.Models
         public DateTime? 修正完了日 { get; set; }
         public string? 起案者 { get; set; }
         public string? 担当者 { get; set; }
+        public string? 担当者コード { get; set; }
         public string? 分類 { get; set; }
         public string? 備考 { get; set; }
         public decimal? 分類コード { get; set; }
