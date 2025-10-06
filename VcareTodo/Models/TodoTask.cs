@@ -17,6 +17,8 @@ namespace VcareTodo.Models
         public decimal? 実績工数 { get; set; }
         public decimal? 保守工数 { get; set; }
         public DateTime? 作業予定日 { get; set; }
+        public TimeSpan? 開始時刻 { get; set; }
+        public TimeSpan? 終了時刻 { get; set; }
         public DateTime? 修正完了日 { get; set; }
         public string? 起案者 { get; set; }
         public string? 担当者 { get; set; }

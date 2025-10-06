@@ -39,6 +39,7 @@ namespace VcareTodo.Controllers
             var unscheduledQuery = @"
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
+                       作業予定日, 開始時刻, 終了時刻, 修正完了日,
                        起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                 FROM T_システム管理台帳
                 WHERE 担当者コード = @UserCode AND 作業予定日 IS NULL AND (状態 != '完了' OR 状態 IS NULL)
@@ -71,10 +72,10 @@ namespace VcareTodo.Controllers
             var scheduledQuery = @"
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                       作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
+                       作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                 FROM T_システム管理台帳
                 WHERE 担当者コード = @UserCode AND 作業予定日 >= @StartDate AND 作業予定日 < @EndDate
-                ORDER BY 作業予定日, 新規登録日";
+                ORDER BY 作業予定日, 開始時刻, 新規登録日";
 
             viewModel.ScheduledTasks = (await _db.QueryAsync<TodoTask>(scheduledQuery, new { UserCode = targetUserCode, StartDate = startDate, EndDate = endDate })).ToList();
 
@@ -112,11 +113,11 @@ namespace VcareTodo.Controllers
                     INSERT INTO T_システム管理台帳
                     (内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                      SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                     作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 新規登録日)
+                     作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 新規登録日)
                     VALUES
                     (@内容, @取引先コード, @取引先名, @部署コード, @部署名, @PLANID, @PlanName,
                      @SYSTEMID, @SystemName, @対応方法, @見積工数, @実績工数, @保守工数,
-                     @作業予定日, @修正完了日, @起案者, @担当者, @担当者コード, @分類, @備考, GETDATE())";
+                     @作業予定日, @開始時刻, @終了時刻, @修正完了日, @起案者, @担当者, @担当者コード, @分類, @備考, GETDATE())";
 
                 if (string.IsNullOrEmpty(task.担当者コード))
                 {
@@ -163,7 +164,7 @@ namespace VcareTodo.Controllers
                         部署コード = @部署コード, 部署名 = @部署名, PLANID = @PLANID, PlanName = @PlanName,
                         SYSTEMID = @SYSTEMID, SystemName = @SystemName, 対応方法 = @対応方法,
                         見積工数 = @見積工数, 実績工数 = @実績工数, 保守工数 = @保守工数,
-                        作業予定日 = @作業予定日, 修正完了日 = @修正完了日, 起案者 = @起案者,
+                        作業予定日 = @作業予定日, 開始時刻 = @開始時刻, 終了時刻 = @終了時刻, 修正完了日 = @修正完了日, 起案者 = @起案者,
                         担当者 = @担当者, 担当者コード = @担当者コード, 分類 = @分類, 備考 = @備考
                     WHERE ID = @ID";
 
@@ -187,8 +188,13 @@ namespace VcareTodo.Controllers
 
             try
             {
-                var query = "UPDATE T_システム管理台帳 SET 作業予定日 = @Date WHERE ID = @TaskId";
-                await _db.ExecuteAsync(query, new { TaskId = request.TaskId, Date = request.Date });
+                var query = "UPDATE T_システム管理台帳 SET 作業予定日 = @Date, 開始時刻 = @StartTime, 終了時刻 = @EndTime WHERE ID = @TaskId";
+                await _db.ExecuteAsync(query, new {
+                    TaskId = request.TaskId,
+                    Date = request.Date,
+                    StartTime = request.StartTime,
+                    EndTime = request.EndTime
+                });
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -232,7 +238,7 @@ namespace VcareTodo.Controllers
                 var query = @"
                     SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                            SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                           作業予定日, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
+                           作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
                     FROM T_システム管理台帳
                     WHERE ID = @Id";
 
@@ -255,6 +261,8 @@ namespace VcareTodo.Controllers
     {
         public decimal TaskId { get; set; }
         public DateTime? Date { get; set; }
+        public TimeSpan? StartTime { get; set; }
+        public TimeSpan? EndTime { get; set; }
     }
 
     public class DeleteTaskRequest
