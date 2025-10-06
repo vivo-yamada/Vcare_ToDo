@@ -823,12 +823,18 @@
 
             if (task.作業予定日) {
                 const date = new Date(task.作業予定日);
-                $('#scheduledDate').val(date.toISOString().split('T')[0]);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                $('#scheduledDate').val(`${year}-${month}-${day}`);
             }
 
             if (task.修正完了日) {
                 const date = new Date(task.修正完了日);
-                $('#completionDate').val(date.toISOString().split('T')[0]);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                $('#completionDate').val(`${year}-${month}-${day}`);
             }
 
             $('#requester').val(task.起案者);
