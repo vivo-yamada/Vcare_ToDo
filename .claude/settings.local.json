@@ -12,7 +12,11 @@
       "Bash(dir)",
       "Bash(dotnet restore:*)",
       "Bash(dotnet build)",
-      "Bash(del \"C:\\ClaudeCode\\APPS\\Vcare_ToDo\\VcareTodo\\Tools\\GeneratePasswordHash.cs\")"
+      "Bash(del \"C:\\ClaudeCode\\APPS\\Vcare_ToDo\\VcareTodo\\Tools\\GeneratePasswordHash.cs\")",
+      "Bash(dotnet clean:*)",
+      "Bash(dir:*)",
+      "Bash(Get-ChildItem -Recurse -Filter \"AssemblyInfo.cs\")",
+      "Bash(Select-Object FullName)"
     ],
     "deny": [],
     "ask": []
