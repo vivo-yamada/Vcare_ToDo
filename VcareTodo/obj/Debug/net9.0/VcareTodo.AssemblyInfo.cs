@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VcareTodo")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65a8907835a014056617bda184e57bc127f0dc0c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f9131f59e8823d4a18facde90a0a84270042fec")]
 [assembly: System.Reflection.AssemblyProductAttribute("VcareTodo")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VcareTodo")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
