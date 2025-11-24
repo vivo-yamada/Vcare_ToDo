@@ -162,11 +162,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            pointer-events: none;
         }
         .time-grid-line {
             height: 60px;
             border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+        .time-grid-line.drop-zone {
+            background: rgba(33, 150, 243, 0.3) !important;
+            box-shadow: inset 0 0 0 2px #2196f3;
         }
 
         /* Month View Cells */
@@ -541,6 +545,7 @@
                 const line = document.createElement('div');
                 line.className = 'time-grid-line';
                 line.dataset.hour = h;
+                line.dataset.date = currentDate.toISOString().split('T')[0];
                 timeGrid.appendChild(line);
             }
             dayCol.appendChild(timeGrid);
@@ -606,6 +611,7 @@
                     const line = document.createElement('div');
                     line.className = 'time-grid-line';
                     line.dataset.hour = h;
+                    line.dataset.date = day.toISOString().split('T')[0];
                     timeGrid.appendChild(line);
                 }
                 dayCol.appendChild(timeGrid);
@@ -953,44 +959,55 @@
                 e.originalEvent.dataTransfer.setData('text/plain', $(this).data('task-id'));
             });
 
-            // Drag over day column or month cell
-            $(document).on('dragover', '.day-column, .month-cell', function(e) {
+            // Drag over time grid line (日/週ビュー)
+            $(document).on('dragover', '.time-grid-line', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('.time-grid-line').removeClass('drop-zone');
+                $(this).addClass('drop-zone');
+            });
+
+            $(document).on('dragleave', '.time-grid-line', function(e) {
+                $(this).removeClass('drop-zone');
+            });
+
+            // Drop on time grid line (日/週ビュー)
+            $(document).on('drop', '.time-grid-line', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('drop-zone');
+
+                const taskId = e.originalEvent.dataTransfer.getData('text/plain');
+                const dropDate = $(this).data('date');
+                const dropHour = parseInt($(this).data('hour'));
+
+                const startTime = String(dropHour).padStart(2, '0') + ':00:00';
+                const endTime = String(dropHour + 1).padStart(2, '0') + ':00:00';
+
+                updateTaskDate(taskId, dropDate, startTime, endTime);
+            });
+
+            // Drag over month cell (月ビュー)
+            $(document).on('dragover', '.month-cell', function(e) {
                 e.preventDefault();
                 $(this).addClass('drop-zone');
             });
 
-            $(document).on('dragleave', '.day-column, .month-cell', function(e) {
+            $(document).on('dragleave', '.month-cell', function(e) {
                 $(this).removeClass('drop-zone');
             });
 
-            // Drop on day column or month cell
-            $(document).on('drop', '.day-column, .month-cell', function(e) {
+            // Drop on month cell (月ビュー)
+            $(document).on('drop', '.month-cell', function(e) {
                 e.preventDefault();
                 $(this).removeClass('drop-zone');
 
                 const taskId = e.originalEvent.dataTransfer.getData('text/plain');
                 const dropDate = $(this).data('date');
 
-                // 日/週ビューの場合、ドロップ位置から時刻を計算
-                let startTime = null;
-                let endTime = null;
-
-                if (viewMode === 'day' || viewMode === 'week') {
-                    const rect = this.getBoundingClientRect();
-                    const offsetY = e.originalEvent.clientY - rect.top;
-
-                    // 各時間スロットは60px、8:00から開始
-                    const hourOffset = Math.floor(offsetY / 60);
-                    const startHour = Math.min(Math.max(8 + hourOffset, 8), 18); // 8:00-18:00の範囲
-                    const endHour = Math.min(startHour + 1, 19); // 1時間のデフォルト期間
-
-                    startTime = String(startHour).padStart(2, '0') + ':00:00';
-                    endTime = String(endHour).padStart(2, '0') + ':00:00';
-                } else {
-                    // 月ビューの場合はデフォルトで9:00-10:00
-                    startTime = '09:00:00';
-                    endTime = '10:00:00';
-                }
+                // 月ビューの場合はデフォルトで9:00-10:00
+                const startTime = '09:00:00';
+                const endTime = '10:00:00';
 
                 updateTaskDate(taskId, dropDate, startTime, endTime);
             });
