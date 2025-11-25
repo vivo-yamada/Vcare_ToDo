@@ -40,7 +40,7 @@ namespace VcareTodo.Controllers
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
                        作業予定日, 開始時刻, 終了時刻, 修正完了日,
-                       起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
+                       起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日, 重要タスクFLG
                 FROM T_システム管理台帳
                 WHERE 担当者コード = @UserCode AND 作業予定日 IS NULL AND (状態 != '完了' OR 状態 IS NULL)
                 ORDER BY 新規登録日 DESC";
@@ -72,7 +72,7 @@ namespace VcareTodo.Controllers
             var scheduledQuery = @"
                 SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                        SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                       作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
+                       作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日, 重要タスクFLG
                 FROM T_システム管理台帳
                 WHERE 担当者コード = @UserCode AND 作業予定日 >= @StartDate AND 作業予定日 < @EndDate
                 ORDER BY 作業予定日, 開始時刻, 新規登録日";
@@ -113,11 +113,11 @@ namespace VcareTodo.Controllers
                     INSERT INTO T_システム管理台帳
                     (内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                      SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                     作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 新規登録日)
+                     作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 新規登録日, 重要タスクFLG)
                     VALUES
                     (@内容, @取引先コード, @取引先名, @部署コード, @部署名, @PLANID, @PlanName,
                      @SYSTEMID, @SystemName, @対応方法, @見積工数, @実績工数, @保守工数,
-                     @作業予定日, @開始時刻, @終了時刻, @修正完了日, @起案者, @担当者, @担当者コード, @分類, @備考, GETDATE())";
+                     @作業予定日, @開始時刻, @終了時刻, @修正完了日, @起案者, @担当者, @担当者コード, @分類, @備考, GETDATE(), @重要タスクFLG)";
 
                 if (string.IsNullOrEmpty(task.担当者コード))
                 {
@@ -165,7 +165,7 @@ namespace VcareTodo.Controllers
                         SYSTEMID = @SYSTEMID, SystemName = @SystemName, 対応方法 = @対応方法,
                         見積工数 = @見積工数, 実績工数 = @実績工数, 保守工数 = @保守工数,
                         作業予定日 = @作業予定日, 開始時刻 = @開始時刻, 終了時刻 = @終了時刻, 修正完了日 = @修正完了日, 起案者 = @起案者,
-                        担当者 = @担当者, 担当者コード = @担当者コード, 分類 = @分類, 備考 = @備考
+                        担当者 = @担当者, 担当者コード = @担当者コード, 分類 = @分類, 備考 = @備考, 重要タスクFLG = @重要タスクFLG
                     WHERE ID = @ID";
 
                 await _db.ExecuteAsync(query, task);
@@ -188,13 +188,23 @@ namespace VcareTodo.Controllers
 
             try
             {
-                var query = "UPDATE T_システム管理台帳 SET 作業予定日 = @Date, 開始時刻 = @StartTime, 終了時刻 = @EndTime WHERE ID = @TaskId";
-                await _db.ExecuteAsync(query, new {
-                    TaskId = request.TaskId,
-                    Date = request.Date,
-                    StartTime = request.StartTime,
-                    EndTime = request.EndTime
-                });
+                string query;
+                if (request.Date == null)
+                {
+                    // 未定に戻す場合は新規登録日を更新して一番上に表示
+                    query = "UPDATE T_システム管理台帳 SET 作業予定日 = NULL, 開始時刻 = NULL, 終了時刻 = NULL, 新規登録日 = GETDATE() WHERE ID = @TaskId";
+                    await _db.ExecuteAsync(query, new { TaskId = request.TaskId });
+                }
+                else
+                {
+                    query = "UPDATE T_システム管理台帳 SET 作業予定日 = @Date, 開始時刻 = @StartTime, 終了時刻 = @EndTime WHERE ID = @TaskId";
+                    await _db.ExecuteAsync(query, new {
+                        TaskId = request.TaskId,
+                        Date = request.Date,
+                        StartTime = request.StartTime,
+                        EndTime = request.EndTime
+                    });
+                }
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -238,7 +248,7 @@ namespace VcareTodo.Controllers
                 var query = @"
                     SELECT ID, 内容, 取引先コード, 取引先名, 部署コード, 部署名, PLANID, PlanName,
                            SYSTEMID, SystemName, 対応方法, 見積工数, 実績工数, 保守工数,
-                           作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日
+                           作業予定日, 開始時刻, 終了時刻, 修正完了日, 起案者, 担当者, 担当者コード, 分類, 備考, 状態, 起案日, 新規登録日, 重要タスクFLG
                     FROM T_システム管理台帳
                     WHERE ID = @Id";
 

@@ -29,5 +29,6 @@ namespace VcareTodo.Models
         public string? 状態 { get; set; }
         public DateTime? 起案日 { get; set; }
         public DateTime? 新規登録日 { get; set; }
+        public bool? 重要タスクFLG { get; set; }
     }
 }

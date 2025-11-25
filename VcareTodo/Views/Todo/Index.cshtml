@@ -38,6 +38,10 @@
             padding-left: 10px;
             border-left: 4px solid #2196f3;
         }
+        .unscheduled-tasks.drop-zone {
+            background: rgba(33, 150, 243, 0.1) !important;
+            box-shadow: inset 0 0 0 3px #2196f3;
+        }
         .calendar-container {
             background: white;
             border-radius: 8px;
@@ -62,6 +66,13 @@
         .task-card:hover {
             box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
             transform: translateY(-2px);
+        }
+        .task-card.important {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .task-card.important:hover {
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
         }
         /* Time-based Calendar Styles */
         .calendar-grid {
@@ -213,6 +224,14 @@
             background: #1976d2;
             box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
         }
+        .calendar-task.important {
+            background: #ffc107;
+            color: #333;
+        }
+        .calendar-task.important:hover {
+            background: #ffb300;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4);
+        }
 
         /* Drop zones */
         .drop-zone {
@@ -344,7 +363,7 @@
                     <div id="unscheduledTasksList">
                         @foreach (var task in Model.UnscheduledTasks)
                         {
-                            <div class="task-card" draggable="true" data-task-id="@task.ID" onclick="editTask(@task.ID)">
+                            <div class="task-card @(task.重要タスクFLG == true ? "important" : "")" draggable="true" data-task-id="@task.ID" onclick="editTask(@task.ID)">
                                 <div class="task-title">@task.内容</div>
                                 <div class="task-meta">
                                     @if (!string.IsNullOrEmpty(task.取引先名))
@@ -450,6 +469,16 @@
                                         }
                                     }
                                 </select>
+                            </div>
+
+                            <!-- 重要タスク -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="importantTask" name="重要タスクFLG" style="transform: scale(1.5);">
+                                    <label class="form-check-label ms-2" for="importantTask" style="font-weight: bold; color: #ffc107;">
+                                        <i class="fas fa-star me-1"></i>重要タスク
+                                    </label>
+                                </div>
                             </div>
 
                             <!-- 備考 -->
@@ -695,13 +724,14 @@
                         const taskId = @task.ID;
                         const startTimeStr = '@(task.開始時刻?.ToString(@"hh\:mm") ?? "09:00")';
                         const endTimeStr = '@(task.終了時刻?.ToString(@"hh\:mm") ?? "10:00")';
+                        const isImportant = @(task.重要タスクFLG == true ? "true" : "false");
 
                         if (viewMode === 'month') {
                             // Month view: simple task list
                             const cell = document.querySelector(`.month-cell[data-date="${taskDate}"]`);
                             if (cell) {
                                 const taskEl = document.createElement('div');
-                                taskEl.className = 'calendar-task';
+                                taskEl.className = 'calendar-task' + (isImportant ? ' important' : '');
                                 taskEl.textContent = taskTitle;
                                 taskEl.onclick = () => editTask(taskId);
                                 taskEl.style.position = 'relative';
@@ -713,7 +743,7 @@
                             const dayCol = document.querySelector(`.day-column[data-date="${taskDate}"]`);
                             if (dayCol) {
                                 const taskEl = document.createElement('div');
-                                taskEl.className = 'calendar-task';
+                                taskEl.className = 'calendar-task' + (isImportant ? ' important' : '');
                                 taskEl.textContent = taskTitle;
                                 taskEl.onclick = () => editTask(taskId);
                                 taskEl.dataset.taskId = taskId;
@@ -825,6 +855,7 @@
             $('#startTime').val('');
             $('#endTime').val('');
             $('#scheduledDate').val('');
+            $('#importantTask').prop('checked', false);
         }
 
         function populateTaskForm(task) {
@@ -871,6 +902,7 @@
             $('#requester').val(task.起案者);
             $('#assignee').val(task.担当者コード);
             $('#remarks').val(task.備考);
+            $('#importantTask').prop('checked', task.重要タスクFLG === true);
         }
 
         function saveTask() {
@@ -899,6 +931,9 @@
                     }
                 }
             });
+
+            // チェックボックスの値を別途取得（serializeArrayには含まれないため）
+            formData['重要タスクFLG'] = $('#importantTask').is(':checked');
 
             const isEdit = formData.ID && formData.ID > 0;
             const url = isEdit ? '/Todo/UpdateTask' : '/Todo/CreateTask';
@@ -1010,6 +1045,51 @@
                 const endTime = '10:00:00';
 
                 updateTaskDate(taskId, dropDate, startTime, endTime);
+            });
+
+            // Drag over unscheduled tasks area (未定タスクエリア)
+            $(document).on('dragover', '.unscheduled-tasks', function(e) {
+                e.preventDefault();
+                $(this).addClass('drop-zone');
+            });
+
+            $(document).on('dragleave', '.unscheduled-tasks', function(e) {
+                $(this).removeClass('drop-zone');
+            });
+
+            // Drop on unscheduled tasks area (予定を未定に戻す)
+            $(document).on('drop', '.unscheduled-tasks', function(e) {
+                e.preventDefault();
+                $(this).removeClass('drop-zone');
+
+                const taskId = e.originalEvent.dataTransfer.getData('text/plain');
+
+                // 日付と時刻をnullに設定して未定に戻す
+                unscheduleTask(taskId);
+            });
+        }
+
+        function unscheduleTask(taskId) {
+            $.ajax({
+                url: '/Todo/UpdateTaskDate',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    taskId: parseInt(taskId),
+                    date: null,
+                    startTime: null,
+                    endTime: null
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('エラー: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('通信エラーが発生しました');
+                }
             });
         }
 
